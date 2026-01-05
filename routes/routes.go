@@ -19,7 +19,11 @@ func Rountes(app *fiber.App) {
 	api:= app.Group("/api")
 	v1:=api.Group("/v1")
 	v3:=api.Group("/v3")
+    v4:=api.Group("/v4")
 
+
+
+	 
 	v1.Post("/fact/:fact",c.Factorial)
 
 	v3.Post("/ball",c.TaxID)
@@ -28,4 +32,22 @@ func Rountes(app *fiber.App) {
 
 
 
+   //CRUD dogs
+   dog := v1.Group("/dog")
+   dog.Get("", c.GetDogs)
+   dog.Get("/filter", c.GetDog)
+   dog.Get("/json", c.GetDogsJson)
+   dog.Post("/", c.AddDog)
+   dog.Put("/:id", c.UpdateDog)
+   dog.Delete("/:id", c.RemoveDog)
+
+   // company
+   cpn:=v4.Group("/company")
+   cpn.Get("/",c.Getcpn)
+   cpn.Post("/add",c.Addcpn)
+
+
 }
+
+   
+

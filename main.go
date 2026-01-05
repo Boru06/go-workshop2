@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"workshop2/database"
 	"workshop2/routes"
-
+     m"workshop2/models"
 	"github.com/gofiber/fiber/v2"
-    m "workshop2/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -18,7 +17,7 @@ func initDatabase() {
 		"",
 		"127.0.0.1",
 		"3306",
-		"accout",
+		"golang_test",
 	)
 	var err error
 	database.DBConn, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -26,11 +25,13 @@ func initDatabase() {
 		panic(err)
 	}
 	fmt.Println("Database connected!")
-	database.DBConn.AutoMigrate(&m.Register{})
+	database.DBConn.AutoMigrate(&m.Dogs{})
+	database.DBConn.AutoMigrate(&m.Company{})
 }
 
 func main() {
 	app := fiber.New()
+	initDatabase()
 	routes.Rountes(app)
 	app.Listen(":3000")
 }
