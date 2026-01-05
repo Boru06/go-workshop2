@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"workshop2/database"
-	 m"workshop2/models"
+	m "workshop2/models"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -191,49 +191,127 @@ func RemoveDog(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 
+func GetRemoveDog(c *fiber.Ctx) error {
+	db := database.DBConn
+	var dogs []m.Dogs
+
+	if err := db.Unscoped().
+		Where("deleted_at is not null").
+		Find(&dogs).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	return c.Status(200).JSON(dogs)
+}
+
+func GetDogsRange(c *fiber.Ctx) error {
+	db := database.DBConn
+	var dogs []m.Dogs
+
+	min := c.QueryInt("min")
+	max := c.QueryInt("max")
+
+	if min == 0 || max == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "please provide min and max query parameters",
+		})
+	}
+
+	if err := db.
+		Where("dog_id > ? AND dog_id < ?", min, max).
+		Find(&dogs).Error; err != nil {
+
+		return c.Status(500).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// ❌ ไม่พบข้อมูลในฐานข้อมูล
+	if len(dogs) == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "no dogs found in this range",
+		})
+	}
+
+	return c.Status(200).JSON(dogs)
+}
 func GetDogsJson(c *fiber.Ctx) error {
 	db := database.DBConn
 	var dogs []m.Dogs
 
-	db.Find(&dogs) //10ตัว
+	db.Find(&dogs)
 
 	var dataResults []m.DogsRes
-	for _, v := range dogs { //1 inet 112 //2 inet1 113
+
+	// ตัวแปรนับผลรวมแต่ละสี
+	redCount := 0
+	greenCount := 0
+	pinkCount := 0
+	noColorCount := 0
+
+	for _, v := range dogs {
+
 		typeStr := ""
-		if v.DogID == 111 {
+
+		if v.DogID >= 10 && v.DogID <= 50 {
 			typeStr = "red"
-		} else if v.DogID == 113 {
+			redCount++
+		} else if v.DogID >= 100 && v.DogID <= 150 {
 			typeStr = "green"
-		} else if v.DogID == 999 {
+			greenCount++
+		} else if v.DogID >= 200 && v.DogID <= 250 {
 			typeStr = "pink"
+			pinkCount++
 		} else {
 			typeStr = "no color"
+			noColorCount++
 		}
 
 		d := m.DogsRes{
-			Name:  v.Name,  //inet
-			DogID: v.DogID, //112
-			Type:  typeStr, //no color
+			Name:  v.Name,
+			DogID: v.DogID,
+			Type:  typeStr,
 		}
+
 		dataResults = append(dataResults, d)
-		// sumAmount += v.Amount
 	}
 
-	
+	// response
 	r := m.ResultData{
-		Data:  dataResults,
-		Name:  "golang-test",
-		Count: len(dogs), //หาผลรวม,
+		Count:   len(dataResults), // ผลรวมทั้งหมด
+		Name:    "golang-test",
+		Data:    dataResults,
+		Red:     redCount,
+		Green:   greenCount,
+		Pink:    pinkCount,
+		NoColor: noColorCount,
 	}
+
 	return c.Status(200).JSON(r)
 }
 
-func Getcpn(c *fiber.Ctx) error {
+// company function
+func GetcpnAll(c *fiber.Ctx) error {
 	db := database.DBConn
 	var cpn []m.Company
 
 	db.Find(&cpn) //delelete = null
 	return c.Status(200).JSON(cpn)
+}
+
+func Getcpn(c *fiber.Ctx) error {
+	db := database.DBConn
+	search := strings.TrimSpace(c.Query("search"))
+	var dog []m.Company
+
+	result := db.Find(&dog, "id = ?", search)
+
+	// returns found records count, equals `len(users)
+	if result.RowsAffected == 0 {
+		return c.SendStatus(404)
+	}
+	return c.Status(200).JSON(&dog)
 }
 
 func Addcpn(c *fiber.Ctx) error {
@@ -247,6 +325,33 @@ func Addcpn(c *fiber.Ctx) error {
 
 	db.Create(&cpn)
 	return c.Status(201).JSON(cpn)
+}
+
+func Updatecpn(c *fiber.Ctx) error {
+	db := database.DBConn
+	var dog m.Company
+	id := c.Params("id")
+
+	if err := c.BodyParser(&dog); err != nil {
+		return c.Status(503).SendString(err.Error())
+	}
+
+	db.Where("id = ?", id).Updates(&dog)
+	return c.Status(200).JSON(dog)
+}
+
+func Removecpn(c *fiber.Ctx) error {
+	db := database.DBConn
+	id := c.Params("id")
+	var dog m.Company
+
+	result := db.Delete(&dog, id)
+
+	if result.RowsAffected == 0 {
+		return c.SendStatus(404)
+	}
+
+	return c.SendStatus(200)
 }
 
 // }
